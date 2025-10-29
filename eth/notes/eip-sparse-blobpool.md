@@ -233,7 +233,7 @@ An earlier design considered a peer scoring system to grade peers by tracking th
 
 ### devp2p message schema choices
 
-We note that `cell_mask` field in `NewPooledTransactionHashes` is not expressive enough to signal different local availability for type 3 txs announced within the same message. This limitation impacts us: (a) fully and partially available txs cannot be announced together, and (b) availability of randomly sampled columns cannot be signaled in practice (because indices vary per tx), only custody columns can be reliably announced (they're shared).
+We note that `cell_mask` field in `NewPooledTransactionHashes` is not expressive enough to signal different local availability for type 3 txs announced within the same message. This limitation implies that (a) fully and partially available txs cannot be announced together, and (b) availability of randomly sampled columns cannot be signaled in practice (because indices vary per tx), only custody columns can be consistently announced (they're shared across all sampled transactions).
 
 However, the sender can split and group announcements with little overhead: fully-available txs can be bundled together, and partially available txs can be announced in separate messages.
 
