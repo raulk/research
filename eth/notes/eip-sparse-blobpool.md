@@ -235,7 +235,7 @@ An earlier design considered a peer scoring system to grade peers by tracking th
 
 We note that `cell_mask` field in `NewPooledTransactionHashes` is not expressive enough to signal different local availability for type 3 txs announced within the same message. This limitation implies that (a) fully and partially available txs cannot be announced together, and (b) availability of randomly sampled columns cannot be signaled in practice (because indices vary per tx), only custody columns can be consistently announced (they're shared across all sampled transactions).
 
-However, the sender can split and group announcements with little overhead: fully-available txs can be bundled together, and partially available txs can be announced in separate messages.
+Nevertheless, the sender can efficiently split and group announcements: fully-available txs can be bundled together, and partially-available txs can be announced in separate messages. Per-message dispatch overhead is minimal (one uint64 request_id and one uint8 message_type), and more expressive designs are likely to incur in higher overhead. Furthermore, from a protocol flow perspective, devp2p supports concurrent requests and unordered responses (via `request_id` correlation), so this approach is not affected by head-of-line blocking either (at least from a protocol perspective).
 
 We considered more expressive designs, ranging from simple arrays of `cell_mask`s (one per tx), to union types express full availability more compactly, to more complex schemes involving run-length encoding and compression. But we concluded that the added complexity was not justified at this time.
 
