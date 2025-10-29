@@ -47,6 +47,9 @@ Add a new field `cell_mask` of type `B_16` (`uint128`). This field MUST be inter
 - old schema (`eth/70`): `[types: B, [size_0: P, size_1: P, ...], [hash_0: B_32, hash_1: B_32, ...]]`
 - new schema (`eth/71`): `[types: B, [size_0: P, size_1: P, ...], [hash_0: B_32, hash_1: B_32, ...], cell_mask: B_16]`
 
+**Modify `GetPooledTransactions` (`0x09`) / `PooledTransactions` (`0x10`) behaviour.**
+Responses now elide blob payloads for type 3 transactions requested via this RPC. This is performed by setting an RLP `nil` literal in the list position corresponding to the transaction's blob data. Cell proofs and commitments are unaffected and continue to be sent.
+
 **New message type `GetCells` (`0x12`).** Used to request cells for type 3 transactions. It specifies the transaction hashes being requested, along with a `cell_mask` specifying which cell indices are needed, with syntax identical as `cell_mask` in `NewPooledTransactionHashes`.
 
 - `eth/71`: `[[hash_0: B_32, hash_1: B_32, ...], cell_mask: B_16]`
