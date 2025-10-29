@@ -73,7 +73,7 @@ If the node is a sampler, the node MUST only request the transaction payload via
 Nodes MAY keep a record of the frequency of full payload fetches made by each peer, relative to their sampling requests. Nodes MAY elect to disconnect peers who exceed some locally-determined fairness heuristic. Such heuristics are not object of standardization.
 
 **Supernode behaviour.**
-Supernodes intending to fetch every blob payload in full MUST load balance requests across samplers and providers. Moreover, supernodes SHOULD prioritize reconstructing blobs and proofs from 64 columns. Supernodes MAY maintain a larger peerset in order to satisfy their heightened blob fetching needs without over-stressing neighbours in ways that can transgress fairness.
+Supernodes (nodes intending to fetch every blob payload in full) MUST load balance requests across samplers and providers. Furthermore, supernodes SHOULD prioritize reconstructing blobs and proofs from 64 columns. Supernodes SHOULD maintain a larger peerset in order to satisfy their increased blob fetching needs without over-stressing a small set of neighbours and violating fairness.
 
 ### Execution clients :: Local block builders
 
