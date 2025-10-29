@@ -75,6 +75,12 @@ Nodes MAY keep a record of the frequency of full payload fetches made by each pe
 **Supernode behaviour.**
 Supernodes (nodes intending to fetch every blob payload in full) MUST load balance requests across samplers and providers. Furthermore, supernodes SHOULD prioritize reconstructing blobs and proofs from 64 columns. Supernodes SHOULD maintain a larger peerset in order to satisfy their increased blob fetching needs without over-stressing a small set of neighbours and violating fairness.
 
+**Sampler eviction**
+A sampler MAY drop a transaction if it has not observed sufficient network saturation (i.e., announcements from other peers for the same blob) within a defined period.
+
+**Continued sampling**
+Tenured transactions MAY be subject to resampling in other to test for liveness and confirm confidence of continued network-wide availability.
+
 ### Execution clients :: Local block builders
 
 > TODO: config specification needed.
