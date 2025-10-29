@@ -126,7 +126,9 @@ Response:
 - **Mesh degree**: D = 50 (default peerset size)
 - **Sampling requirement**: Minimum `SAMPLES_PER_SLOT = 8` columns per node as per PeerDAS specification
 - **Reconstruction threshold**: 64 cells required for Reed-Solomon decoding
-- **Minimum providers to sample**: minimum 4 peers should be providers in order to sample
+- **Minimum providers to sample**: minimum 2 providers should be observed before sampling
+- **Extra random columns per request**: `C_extra = 1`
+- **Maximum columns per request**: `C_req = 8`
 
 ## Rationale
 
@@ -173,9 +175,9 @@ Evaluating for sensible values of $p$ and $k$ yields, where $D=50$ (Geth's defau
 
 ## Backwards Compatibility
 
-This EIP changes the `eth` protocol and requires rolling out a new version, `eth/70`. Supporting multiple versions of a wire protocol is possible. Rolling out a new version does not break older clients immediately, since they can keep using protocol version `eth/69`.
+This EIP changes the `eth` protocol and requires rolling out a new version, `eth/71`. Supporting multiple versions of a wire protocol is possible. Rolling out a new version does not break older clients immediately, since they can keep using protocol version `eth/70`.
 
-This EIP does not change consensus rules of the EVM and does not strictly require a hard fork. We are assessing the gradual rollout possibilities. In the meantime, it is RECOMMENDED that this EIP be deployed within the context of a hard fork.
+This EIP does not change consensus rules and does not strictly require a hard fork. We are assessing the gradual rollout possibilities. In the meantime, it is RECOMMENDED that this EIP be deployed within the context of a hard fork.
 
 ## Test Cases
 
