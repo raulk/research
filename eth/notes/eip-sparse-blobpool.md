@@ -2,15 +2,15 @@
 
 ---
 
-eip: 9999
+eip: 0000
 title: Sparse Blobpool
-description: Introduce sampling to the EL blobpool to scale
-author:
+description: Introduce custody-aligned sampling in the EL blobpool to vacate bandwidth
+author: Raúl Kripalani (@raulk), Francesco D'Amato (@fradamt), Bosul Mun (@healthykim), Csaba Kiraly (@cskiraly), Felix Lange (@fjl), Marios Ioannou (@mariosioannou-create)
 discussions-to: https://ethereum-magicians.org/t/TBD
 status: Draft
 type: Standards Track
 category: Networking
-created: 2025-10-27
+created: 2025-10-29
 requires: 4844, 7594, 7870
 
 ---
