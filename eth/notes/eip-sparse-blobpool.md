@@ -61,7 +61,7 @@ Responses now elide blob payloads for type 3 transactions requested via this RPC
 ### Execution clients :: Blobpool behavior
 
 **New transaction hash.**
-Upon receiving a `NewPooledTransactionHashes` announcement containing a previously unknown type 3 transaction hash, the node makes a probabilistic decision about fetching the blob payload: it decides to fetch the full blob payload with probability p = 0.15 (provider role), or simply sample otherwise (sampler role).
+Upon receiving a `NewPooledTransactionHashes` announcement containing a previously unknown type 3 transaction hash, the node makes a probabilistic decision about fetching the blob payload: it decides to fetch the full blob payload with probability p = 0.15 (provider role), or simply sample otherwise (sampler role). This decision MAY be remembered for some period chosen by the implementer, in which case stateless heuristics are RECOMMENDED (e.g. calculating a hash by appending some time-bound value mixed in with stable transaction properties, and applying p to it).
 
 **Provider role.**
 If the node is a provider, and the announcing peer signaled full availability, the node MUST request the full transaction payload from that peer. Upon successful retrieval and validation (as per [EIP-7594](./eip-7594.md)), the node MUST in turn announce the transaction hash to its peers via `NewPooledTransactionHashes`, indicating full availability.
