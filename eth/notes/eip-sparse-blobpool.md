@@ -239,6 +239,11 @@ However, the sender can split and group announcements with little overhead: full
 
 We considered more expressive designs, ranging from simple arrays of `cell_mask`s (one per tx), to union types express full availability more compactly, to more complex schemes involving run-length encoding and compression. But we concluded that the added complexity was not justified at this time.
 
+### Open points
+
+- Further threat modelling and security hardening.
+- RBF (replace-by-fee) impact.
+
 ## Copyright
 
 Copyright and related rights waived via [CC0](../LICENSE.md).
