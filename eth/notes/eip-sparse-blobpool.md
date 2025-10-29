@@ -37,15 +37,23 @@ While the scalability gain may be more modest than with other solutions, we beli
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) and [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174).
 
-### Execution Clients :: devp2p changes
+### Execution clients :: devp2p changes
 
-TODO: check if this is how it is being implemented now
+We introduce a new devp2p protocol version, `eth/71` extending the existing `eth/70` protocol (TODO: spec for eth/70 missing).
 
-- Extend the `NewPooledTransactionHashes` and `GetPooledTransactions` messages with a `mask` bytes field whose value is contextual to the transaction type.
-  - For type 3 transactions, we define `mask` to be the concatenation of a single bitmap of size (128 bits × blob count) and is interpreted as the concatenation of one 128-element bitmap per blob (in transaction order), where 1 bits denote that the cell at that index is available.
-  - For other transaction types, `mask` MUST be an RLP `nil` value.
-- Extend the `PooledTransactions` message schema to support cell-level returns
-- Introduce eth/70 protocol version
+**Modify `NewPooledTransactionHashes` (`0x08`) message.**
+Add a new field `cell_mask` of type `B_16` (`uint128`). This field MUST be interpreted as a bitarray of length `CELLS_PER_EXT_BLOB`, carrying `1` in the indices of colums the announcer has available for **all type 3 txs announced within the message**. This field MUST be set to `nil` when no transactions of such type are announced. (TODO: this approach is not expressive enough if the node wants to offer randomly sampled columns, nor if it wants to announce transactions with full and partial availability in a single message).
+
+- old schema (`eth/70`): `[types: B, [size_0: P, size_1: P, ...], [hash_0: B_32, hash_1: B_32, ...]]`
+- new schema (`eth/71`): `[types: B, [size_0: P, size_1: P, ...], [hash_0: B_32, hash_1: B_32, ...], cell_mask: B_16]`
+
+**New message type `GetCells` (`0x12`).** Used to request cells for type 3 transactions. It specifies the transaction hashes being requested, along with a `cell_mask` specifying which cell indices are needed, with syntax identical as `cell_mask` in `NewPooledTransactionHashes`.
+
+- `eth/71`: `[[hash_0: B_32, hash_1: B_32, ...], cell_mask: B_16]`
+
+**New message type `Cells` (`0x13`).** Used to respond to a `GetCells` requests.
+
+- `eth/71`: `[[hash_0: B_32, hash_1: B_32, ...], cells: [[cell_0_0: B_2048, cell_0_1: B_2048, ...], [cell_1_0: B_2048, cell_1_1: B_2048, ...]], cell_mask: B_16]`
 
 ### Execution clients :: Blobpool behavior
 
@@ -65,8 +73,6 @@ Nodes MAY keep a record of the frequency of full payload fetches made by each pe
 Supernodes intending to fetch every blob payload in full MUST load balance requests across samplers and providers. Moreover, supernodes SHOULD prioritize reconstructing blobs and proofs from 64 columns. Supernodes MAY maintain a larger peerset in order to satisfy their heightened blob fetching needs without over-stressing neighbours in ways that can transgress fairness.
 
 ### Execution clients :: Local block builders
-
-> TODO
 
 Client implementations MUST provide configuration options for local block builders to specify a blob inclusion policy when proposing a block. Implementations SHOULD support at least these policies:
 
@@ -200,6 +206,14 @@ This simple mechanism reinforces key model assumptions (a provider is truly a pr
 ### No normative peer scoring
 
 An earlier design considered a peer scoring system to grade peers by tracking their statistical ratio of requests to announcements (leechiness vs. helpfulness). After careful consideration, we deemed this approached brittle and dropped the feature. Our rationale was that such mechanism would strongly encode assumptions and confine the system to conform to some modellic behaviour, thus reducing flexibility and resilience in the face of environmental changes, shocks, or unexpected/improbable events (properties that are crucial in open and permissionless systems). Instead, we defer to implementations to define their own local heuristics for peer disconnection, if any.
+
+### devp2p message schema choices
+
+We note that `cell_mask` field in `NewPooledTransactionHashes` is not expressive enough to signal different local availability for type 3 txs announced within the same message. This limitation impacts us: (a) fully and partially available txs cannot be announced together, and (b) availability of randomly sampled columns cannot be signaled in practice (because indices vary per tx), only custody columns can be reliably announced (they're shared).
+
+However, the sender can split and group announcements with little overhead: fully-available txs can be bundled together, and partially available txs can be announced in separate messages.
+
+We considered more expressive designs, ranging from simple arrays of `cell_mask`s (one per tx), to union types express full availability more compactly, to more complex schemes involving run-length encoding and compression. But we concluded that the added complexity was not justified at this time.
 
 ## Copyright
 
