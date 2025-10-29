@@ -74,6 +74,8 @@ Supernodes intending to fetch every blob payload in full MUST load balance reque
 
 ### Execution clients :: Local block builders
 
+> TODO: config specification needed.
+
 Client implementations MUST provide configuration options for local block builders to specify a blob inclusion policy when proposing a block. Implementations SHOULD support at least these policies:
 
 1. Conservative: include only blob transactions for which all blob data is fully available locally (equivalent to today's behaviour).
@@ -81,6 +83,8 @@ Client implementations MUST provide configuration options for local block builde
 3. Proactive: resample prior to blob proposal time in order to assess network-wide confidence of blobs potentially selected for inclusion. This requires an additional Engine API extension for the CL to notify the EL of upcoming proposer duty (TODO).
 
 ### Engine API extensions
+
+> TODO: This specification will be moved out to the https://github.com/ethereum/execution-apis/ repo and linked to from here.
 
 **Method `engine_blobCustodyUpdatedV1`**
 
@@ -97,6 +101,15 @@ Response:
 
 - result: no payload
 - error: code and message set in case an error occurs during processing of the request.
+
+Specification:
+
+1. The Consensus client MUST call this method whenever its custody set changes. Additionally, it MUST call it on start, on restart, and when an Engine API interruption is detected.
+2. The Execution client MUST return an Ok response if the request is well-formed. All subsequent sampling requests MUST adopt the new custody set. Queued sampling requests MAY be patched to reflect the new custody set.
+3. For type 3 transactions pending in the blobpool:
+    1. If the custody set has expanded, the Execution client MUST issue new sampling requests for the delta. It SHOULD broadcast updated `NewPooledTransactionHashes` announcement with the new available set.
+    2. If the custody set has contracted, the Execution client MAY prune dropped cells from local storage, but only AFTER it has broadcast an updated `NewPooledTransactionHashes` announcement with the reduced available set. This is to avoid peers from perceiving an availability fault if they happen to request those previously announced cells.
+4. The Execution client MUST treat a request to update the custody set to the current value as a no-op operation returning an Ok.
 
 **Method `engine_getBlobsV4`**
 
@@ -117,7 +130,7 @@ Response:
 
 **Data structure `BlobCellsAndProofsV1`**
 
-- `blob_cells`: a sequence of byte arrays `[]bytes` representing the partial matrix of the requested blobs
+- `blob_cells`: a sequence of byte arrays `[]bytes` representing the partial matrix of the requested blobs, with `nil` entries for missing cells.
 - `proofs`: `Array of DATA` - Array of `KZGProof` as defined in [EIP-4844](./eip-4844.md), 48 bytes each (`DATA`)
 
 ### Parameters
