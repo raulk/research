@@ -223,15 +223,15 @@ class StressTestScenario:
 
         # Generate standard plots (these work well for any size)
         visualizer.plot_propagation_latency(
-            output_file=f"{output_dir}/propagation_latency.png"
+            output_file=f"{output_dir}/propagation_latency.html"
         )
 
         visualizer.plot_bandwidth_by_role(
-            output_file=f"{output_dir}/bandwidth_by_role.png"
+            output_file=f"{output_dir}/bandwidth_by_role.html"
         )
 
         visualizer.plot_provider_distribution(
-            output_file=f"{output_dir}/provider_distribution.png"
+            output_file=f"{output_dir}/provider_distribution.html"
         )
 
         print(f"Visualizations saved to {output_dir}/")

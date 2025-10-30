@@ -362,7 +362,7 @@ class AdversarialScenario:
         visualizer.plot_network_topology(
             self.network.adjacency,
             node_colors=node_colors,
-            output_file=f"{output_dir}/adversarial_topology.png"
+            output_file=f"{output_dir}/adversarial_topology.html"
         )
 
         print(f"Visualizations saved to {output_dir}/")

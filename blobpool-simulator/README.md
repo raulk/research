@@ -1,6 +1,6 @@
 # Sparse Blobpool Network Simulator
 
-A high-performance discrete-event simulator for the **Sparse Blobpool** protocol (EIP draft). This simulator enables comprehensive testing and analysis of the sparse blobpool's behavior under various network conditions, node configurations, and adversarial scenarios.
+A high-performance discrete-event simulator for the **Sparse Blobpool** protocol (EIP draft). Built with modern Python 3.12+ and Plotly for interactive visualizations. This simulator enables comprehensive testing and analysis of the sparse blobpool's behavior under various network conditions, node configurations, and adversarial scenarios.
 
 ## Features
 
@@ -9,8 +9,9 @@ A high-performance discrete-event simulator for the **Sparse Blobpool** protocol
 - **Network Modeling**: Realistic latency distributions and multiple topology strategies
 - **Extensible Hooks**: Custom behavior injection at key decision points
 - **Comprehensive Statistics**: Transaction propagation, bandwidth usage, and request metrics
-- **Rich Visualizations**: Charts, graphs, and animated network propagation
+- **Interactive Visualizations**: Plotly-powered interactive charts, graphs, and animated network propagation (HTML + PNG export)
 - **Scenario Framework**: Clear separation between framework and experiment definitions
+- **Modern Python**: Built for Python 3.12+ with latest dependencies
 
 ## Architecture
 
@@ -23,7 +24,7 @@ Core simulation engine providing reusable components:
 - **`node.py`**: Extensible node behavior system with hook support
 - **`network.py`**: Network topology generation and message passing
 - **`statistics.py`**: Metrics collection and reporting
-- **`visualization.py`**: Charts and animated network graphs
+- **`visualization.py`**: Interactive Plotly charts and animated network graphs (HTML/PNG export)
 
 ### Scenarios (`scenarios/`)
 Pre-built simulation scenarios demonstrating different use cases:
@@ -33,10 +34,18 @@ Pre-built simulation scenarios demonstrating different use cases:
 
 ## Installation
 
+**Requirements**: Python 3.12 or higher
+
 ```bash
 cd blobpool-simulator
 pip install -r requirements.txt
 ```
+
+The simulator uses modern Python features and is tested with Python 3.12+. Key dependencies include:
+- Plotly 5.18+ for interactive visualizations
+- NumPy 2.0+ for numerical operations
+- NetworkX 3.2+ for graph algorithms
+- Pandas 2.2+ for data analysis
 
 ## Quick Start
 
@@ -240,17 +249,19 @@ The simulator generates comprehensive statistics including:
 - Network-wide metrics
 
 ### Visualizations
-- Propagation latency histograms and CDFs
-- Bandwidth usage by node role
-- Provider vs sampler distribution
-- Request success rate charts
-- Network topology graphs (color-coded by role)
-- Animated transaction propagation (GIF)
+All visualizations are powered by Plotly for interactivity:
+- **Interactive propagation latency** histograms and CDFs with hover tooltips
+- **Bandwidth usage** by node role with zoom/pan controls
+- **Provider vs sampler distribution** with multi-panel analysis
+- **Request success rate** charts with color-coded performance
+- **Network topology graphs** (color-coded by role, interactive node exploration)
+- **Animated transaction propagation** with play/pause controls (HTML)
 
 ### Export Formats
-- CSV files for transactions and nodes
-- PNG charts and graphs
-- Summary statistics in text/table format
+- **HTML files** for interactive Plotly visualizations (recommended)
+- **PNG/static images** for charts and graphs (optional)
+- **CSV files** for transactions and nodes
+- **Summary statistics** in text/table format
 
 ## Performance
 

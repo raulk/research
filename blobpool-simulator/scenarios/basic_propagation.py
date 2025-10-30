@@ -340,7 +340,7 @@ class BasicPropagationScenario:
             self.network.adjacency,
             node_colors=node_colors,
             node_positions=self.network.topology.node_positions,
-            output_file=f"{output_dir}/network_topology.png"
+            output_file=f"{output_dir}/network_topology.html"
         )
 
         print(f"Visualizations saved to {output_dir}/")
