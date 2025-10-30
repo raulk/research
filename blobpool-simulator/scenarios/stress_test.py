@@ -13,8 +13,7 @@ from framework import (
     create_supernode,
     create_custody_columns,
     create_full_transaction,
-    Topology,
-    TopologyStrategy,
+    ScaleFreeTopology,
     LatencyModel,
     MetricsCollector,
     Statistics,
@@ -44,7 +43,7 @@ class StressTestScenario:
                 - num_supernodes: Number of supernodes (default: 100)
                 - num_transactions: Number of transactions (default: 100)
                 - transactions_per_second: Transaction injection rate (default: 10)
-                - topology: Topology strategy (default: SCALE_FREE)
+                - topology_class: Topology class to use (default: ScaleFreeTopology)
                 - avg_degree: Average peer connections (default: 50)
                 - simulation_time_ms: Total simulation time (default: 30000)
                 - enable_progress_bar: Show progress bar (default: True)
@@ -54,7 +53,7 @@ class StressTestScenario:
             "num_supernodes": 100,
             "num_transactions": 100,
             "transactions_per_second": 10,
-            "topology": TopologyStrategy.SCALE_FREE,
+            "topology_class": ScaleFreeTopology,
             "avg_degree": 50,
             "simulation_time_ms": 30000,
             "base_latency_ms": 50,
@@ -77,12 +76,12 @@ class StressTestScenario:
         print(f"  Total nodes: {self.config['num_nodes']}")
         print(f"  Supernodes: {self.config['num_supernodes']}")
         print(f"  Transactions: {self.config['num_transactions']}")
-        print(f"  Topology: {self.config['topology'].value}")
+        print(f"  Topology: {self.config['topology_class'].__name__}")
 
         # Create network with optimized settings for large scale
         latency_model = LatencyModel(base_latency_ms=self.config["base_latency_ms"])
-        topology = Topology(
-            strategy=self.config["topology"],
+        topology_class = self.config["topology_class"]
+        topology = topology_class(
             avg_degree=self.config["avg_degree"],
             seed=42
         )

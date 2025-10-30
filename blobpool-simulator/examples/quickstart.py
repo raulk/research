@@ -110,7 +110,7 @@ def example_5_custom_hooks():
     from framework import (
         EventQueue, Network, Node, NodeProfile, NodeRole,
         create_custody_columns, create_full_transaction,
-        Topology, TopologyStrategy, LatencyModel,
+        RandomTopology, LatencyModel,
         MetricsCollector, Statistics, Visualizer,
         NodeBehavior
     )
@@ -135,7 +135,7 @@ def example_5_custom_hooks():
     network = Network(
         event_queue,
         LatencyModel(),
-        Topology(TopologyStrategy.RANDOM, avg_degree=10)
+        RandomTopology(avg_degree=10)
     )
 
     for i in range(20):
@@ -170,30 +170,30 @@ def example_6_topology_comparison():
     print("EXAMPLE 6: Topology Comparison")
     print("="*80)
 
-    from framework import TopologyStrategy
+    from framework import RandomTopology, SmallWorldTopology, ScaleFreeTopology
 
     topologies = [
-        TopologyStrategy.RANDOM,
-        TopologyStrategy.SMALL_WORLD,
-        TopologyStrategy.SCALE_FREE,
+        ("Random", RandomTopology),
+        ("Small World", SmallWorldTopology),
+        ("Scale Free", ScaleFreeTopology),
     ]
 
     results = {}
 
-    for topology in topologies:
-        print(f"\nTesting {topology.value} topology...")
+    for topo_name, topo_class in topologies:
+        print(f"\nTesting {topo_name} topology...")
 
         config = {
             "num_nodes": 200,
             "num_transactions": 5,
-            "topology": topology,
+            "topology_class": topo_class,
             "simulation_time_ms": 20000
         }
 
         scenario = run_basic_scenario(config)
         summary = scenario.collector.get_summary()
 
-        results[topology.value] = {
+        results[topo_name] = {
             "p50_latency": summary["transaction_propagation"]["p50_latency_ms"],
             "p95_latency": summary["transaction_propagation"]["p95_latency_ms"],
             "bandwidth_mb": summary["bandwidth"]["total_downloaded_mb"]

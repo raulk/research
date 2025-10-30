@@ -18,8 +18,7 @@ from framework import (
     create_normal_node,
     create_custody_columns,
     create_full_transaction,
-    Topology,
-    TopologyStrategy,
+    SmallWorldTopology,
     LatencyModel,
     MetricsCollector,
     Statistics,
@@ -113,7 +112,7 @@ class AdversarialScenario:
                 - num_withholding_nodes: Number of withholding nodes (default: 50)
                 - num_victims: Number of victim nodes (default: 10)
                 - num_transactions: Number of transactions (default: 10)
-                - topology: Topology strategy (default: SMALL_WORLD)
+                - topology_class: Topology class to use (default: SmallWorldTopology)
                 - avg_degree: Average peer connections (default: 50)
                 - simulation_time_ms: Total simulation time (default: 60000)
         """
@@ -123,7 +122,7 @@ class AdversarialScenario:
             "num_withholding_nodes": 50,
             "num_victims": 10,
             "num_transactions": 10,
-            "topology": TopologyStrategy.SMALL_WORLD,
+            "topology_class": SmallWorldTopology,
             "avg_degree": 50,
             "simulation_time_ms": 60000,
             "base_latency_ms": 50,
@@ -148,8 +147,8 @@ class AdversarialScenario:
 
         # Create network
         latency_model = LatencyModel(base_latency_ms=self.config["base_latency_ms"])
-        topology = Topology(
-            strategy=self.config["topology"],
+        topology_class = self.config["topology_class"]
+        topology = topology_class(
             avg_degree=self.config["avg_degree"],
             seed=42
         )
@@ -180,8 +179,7 @@ class AdversarialScenario:
             node_id = f"fake_provider_{i:03d}"
             profile = NodeProfile(
                 role=NodeRole.ADVERSARY,
-                custody_columns=common_custody,
-                malicious=True
+                custody_columns=common_custody
             )
             node = FakeProviderNode(node_id, profile, common_custody)
             self.fake_providers[node_id] = node
@@ -194,8 +192,7 @@ class AdversarialScenario:
             custody = create_custody_columns(num_columns=8, seed=1000 + i)
             profile = NodeProfile(
                 role=NodeRole.ADVERSARY,
-                custody_columns=custody,
-                malicious=True
+                custody_columns=custody
             )
             node = SelectiveWithholdingNode(node_id, profile, self.victim_nodes)
             self.withholding_nodes[node_id] = node

@@ -32,7 +32,6 @@ class NodeProfile:
         provider_probability: Probability of acting as provider (default 0.15)
         max_peers: Maximum number of peers
         bandwidth_limit: Upload bandwidth limit in bytes/sec (None = unlimited)
-        malicious: Whether node exhibits malicious behavior
         custom_params: Dictionary for scenario-specific parameters
     """
     role: NodeRole = NodeRole.SAMPLER
@@ -40,7 +39,6 @@ class NodeProfile:
     provider_probability: float = 0.15
     max_peers: int = 50
     bandwidth_limit: Optional[float] = None
-    malicious: bool = False
     custom_params: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):

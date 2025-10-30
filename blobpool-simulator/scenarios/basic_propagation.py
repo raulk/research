@@ -14,8 +14,7 @@ from framework import (
     create_normal_node,
     create_custody_columns,
     create_full_transaction,
-    Topology,
-    TopologyStrategy,
+    SmallWorldTopology,
     LatencyModel,
     MetricsCollector,
     Statistics,
@@ -43,7 +42,7 @@ class BasicPropagationScenario:
                 - num_nodes: Number of nodes (default: 1000)
                 - num_transactions: Number of transactions (default: 10)
                 - provider_probability: Provider probability (default: 0.15)
-                - topology: Topology strategy (default: SMALL_WORLD)
+                - topology_class: Topology class to use (default: SmallWorldTopology)
                 - avg_degree: Average peer connections (default: 50)
                 - simulation_time_ms: Total simulation time (default: 60000)
                 - base_latency_ms: Base network latency (default: 50)
@@ -52,7 +51,7 @@ class BasicPropagationScenario:
             "num_nodes": 1000,
             "num_transactions": 10,
             "provider_probability": 0.15,
-            "topology": TopologyStrategy.SMALL_WORLD,
+            "topology_class": SmallWorldTopology,
             "avg_degree": 50,
             "simulation_time_ms": 60000,
             "base_latency_ms": 50,
@@ -79,8 +78,8 @@ class BasicPropagationScenario:
         )
 
         # Create topology
-        topology = Topology(
-            strategy=self.config["topology"],
+        topology_class = self.config["topology_class"]
+        topology = topology_class(
             avg_degree=self.config["avg_degree"],
             seed=42
         )

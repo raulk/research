@@ -5,24 +5,14 @@ Supports various topology strategies and realistic latency distributions.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Set, Optional, Callable, Tuple
-from enum import Enum
+from typing import Dict, List, Set, Optional, Callable, Tuple, Any
+from abc import ABC, abstractmethod
 import random
 import math
 
 from .node import Node
 from .transaction import Transaction, BlobCell, CELLS_PER_EXT_BLOB
 from .events import EventQueue
-
-
-class TopologyStrategy(Enum):
-    """Network topology generation strategies."""
-    RANDOM = "random"  # Random graph
-    SMALL_WORLD = "small_world"  # Watts-Strogatz small world
-    SCALE_FREE = "scale_free"  # Barabási-Albert scale-free
-    GRID = "grid"  # 2D grid
-    CLIQUE = "clique"  # Fully connected
-    GEOGRAPHICAL = "geographical"  # Geographically distributed
 
 
 @dataclass
@@ -67,24 +57,27 @@ class LatencyModel:
         return max(1.0, latency)  # Minimum 1ms
 
 
-class Topology:
+class Topology(ABC):
     """
-    Network topology manager.
+    Abstract base class for network topologies.
 
-    Handles topology generation and neighbor relationships.
+    All topology implementations must inherit from this class and
+    implement the generate() method.
     """
 
-    def __init__(
-        self,
-        strategy: TopologyStrategy = TopologyStrategy.RANDOM,
-        avg_degree: int = 50,
-        seed: Optional[int] = None
-    ):
-        self.strategy = strategy
+    def __init__(self, avg_degree: int = 50, seed: Optional[int] = None):
+        """
+        Initialize topology.
+
+        Args:
+            avg_degree: Target average degree (number of peers per node)
+            seed: Random seed for reproducibility
+        """
         self.avg_degree = avg_degree
         self.rng = random.Random(seed)
         self.node_positions: Dict[str, Tuple[float, float]] = {}
 
+    @abstractmethod
     def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
         """
         Generate topology and return adjacency list.
@@ -95,23 +88,27 @@ class Topology:
         Returns:
             Dictionary mapping node_id to set of neighbor node_ids
         """
-        if self.strategy == TopologyStrategy.RANDOM:
-            return self._generate_random(nodes)
-        elif self.strategy == TopologyStrategy.SMALL_WORLD:
-            return self._generate_small_world(nodes)
-        elif self.strategy == TopologyStrategy.SCALE_FREE:
-            return self._generate_scale_free(nodes)
-        elif self.strategy == TopologyStrategy.GRID:
-            return self._generate_grid(nodes)
-        elif self.strategy == TopologyStrategy.CLIQUE:
-            return self._generate_clique(nodes)
-        elif self.strategy == TopologyStrategy.GEOGRAPHICAL:
-            return self._generate_geographical(nodes)
-        else:
-            raise ValueError(f"Unknown topology strategy: {self.strategy}")
+        pass
 
-    def _generate_random(self, nodes: List[Node]) -> Dict[str, Set[str]]:
-        """Generate random graph (Erdős–Rényi)."""
+    def get_distance(self, node1_id: str, node2_id: str) -> Optional[float]:
+        """Get geographic distance between two nodes if available."""
+        if node1_id in self.node_positions and node2_id in self.node_positions:
+            pos1 = self.node_positions[node1_id]
+            pos2 = self.node_positions[node2_id]
+            return math.sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
+        return None
+
+
+class RandomTopology(Topology):
+    """
+    Random graph topology (Erdős–Rényi model).
+
+    Nodes are connected with a fixed probability to achieve
+    the target average degree.
+    """
+
+    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+        """Generate random graph."""
         adjacency: Dict[str, Set[str]] = {node.id: set() for node in nodes}
         n = len(nodes)
 
@@ -126,16 +123,37 @@ class Topology:
 
         return adjacency
 
-    def _generate_small_world(self, nodes: List[Node]) -> Dict[str, Set[str]]:
-        """Generate small-world graph (Watts-Strogatz)."""
+
+class SmallWorldTopology(Topology):
+    """
+    Small-world graph topology (Watts-Strogatz model).
+
+    Creates a ring lattice and rewires edges with a small probability,
+    resulting in high clustering and short path lengths (realistic for P2P networks).
+    """
+
+    def __init__(self, avg_degree: int = 50, seed: Optional[int] = None, rewire_prob: float = 0.1):
+        """
+        Initialize small-world topology.
+
+        Args:
+            avg_degree: Target average degree
+            seed: Random seed
+            rewire_prob: Probability of rewiring each edge (default 0.1)
+        """
+        super().__init__(avg_degree, seed)
+        self.rewire_prob = rewire_prob
+
+    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+        """Generate small-world graph."""
         adjacency: Dict[str, Set[str]] = {node.id: set() for node in nodes}
         n = len(nodes)
 
         if n < self.avg_degree:
-            return self._generate_clique(nodes)
+            # Fall back to clique for small networks
+            return CliqueTopology(self.avg_degree, self.rng.randint(0, 2**32-1)).generate(nodes)
 
         k = self.avg_degree // 2  # Each node connects to k neighbors on each side
-        rewire_prob = 0.1
 
         # Create ring lattice
         for i, node in enumerate(nodes):
@@ -148,7 +166,7 @@ class Topology:
         for node in nodes:
             neighbors = list(adjacency[node.id])
             for neighbor_id in neighbors:
-                if self.rng.random() < rewire_prob:
+                if self.rng.random() < self.rewire_prob:
                     # Remove old edge
                     adjacency[node.id].discard(neighbor_id)
                     adjacency[neighbor_id].discard(node.id)
@@ -165,8 +183,18 @@ class Topology:
 
         return adjacency
 
-    def _generate_scale_free(self, nodes: List[Node]) -> Dict[str, Set[str]]:
-        """Generate scale-free graph (Barabási-Albert)."""
+
+class ScaleFreeTopology(Topology):
+    """
+    Scale-free graph topology (Barabási-Albert model).
+
+    Uses preferential attachment where new nodes connect to existing
+    nodes with probability proportional to their degree.
+    Realistic for many real-world networks including the Internet.
+    """
+
+    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+        """Generate scale-free graph."""
         adjacency: Dict[str, Set[str]] = {node.id: set() for node in nodes}
         n = len(nodes)
 
@@ -210,8 +238,17 @@ class Topology:
 
         return adjacency
 
-    def _generate_grid(self, nodes: List[Node]) -> Dict[str, Set[str]]:
-        """Generate 2D grid topology."""
+
+class GridTopology(Topology):
+    """
+    2D grid topology.
+
+    Nodes are arranged in a grid and connected to their 4 neighbors
+    (up, down, left, right). Useful for testing locality effects.
+    """
+
+    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+        """Generate 2D grid graph."""
         adjacency: Dict[str, Set[str]] = {node.id: set() for node in nodes}
         n = len(nodes)
         size = int(math.ceil(math.sqrt(n)))
@@ -236,7 +273,16 @@ class Topology:
 
         return adjacency
 
-    def _generate_clique(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+
+class CliqueTopology(Topology):
+    """
+    Fully connected graph (clique).
+
+    Every node is connected to every other node.
+    Useful for testing with no network constraints.
+    """
+
+    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
         """Generate fully connected graph."""
         adjacency: Dict[str, Set[str]] = {node.id: set() for node in nodes}
 
@@ -247,8 +293,17 @@ class Topology:
 
         return adjacency
 
-    def _generate_geographical(self, nodes: List[Node]) -> Dict[str, Set[str]]:
-        """Generate topology based on geographic proximity."""
+
+class GeographicalTopology(Topology):
+    """
+    Geographically distributed topology.
+
+    Nodes are assigned random positions and connect to their
+    k nearest neighbors. Realistic for geographically distributed networks.
+    """
+
+    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+        """Generate geography-based graph."""
         adjacency: Dict[str, Set[str]] = {node.id: set() for node in nodes}
         n = len(nodes)
 
@@ -279,14 +334,6 @@ class Topology:
 
         return adjacency
 
-    def get_distance(self, node1_id: str, node2_id: str) -> Optional[float]:
-        """Get geographic distance between two nodes if available."""
-        if node1_id in self.node_positions and node2_id in self.node_positions:
-            pos1 = self.node_positions[node1_id]
-            pos2 = self.node_positions[node2_id]
-            return math.sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
-        return None
-
 
 class Network:
     """
@@ -303,7 +350,7 @@ class Network:
     ):
         self.event_queue = event_queue
         self.latency_model = latency_model or LatencyModel()
-        self.topology = topology or Topology()
+        self.topology = topology or RandomTopology()
 
         self.nodes: Dict[str, Node] = {}
         self.adjacency: Dict[str, Set[str]] = {}
