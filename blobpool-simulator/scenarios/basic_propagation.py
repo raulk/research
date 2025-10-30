@@ -4,7 +4,7 @@ Basic transaction propagation scenario.
 Demonstrates normal network operation with probabilistic provider/sampler roles.
 """
 
-from typing import Dict, Any
+from typing import Any
 from framework import (
     EventQueue,
     Network,
@@ -33,7 +33,7 @@ class BasicPropagationScenario:
     - Measure propagation latency and bandwidth
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """
         Initialize scenario with configuration.
 
@@ -61,7 +61,7 @@ class BasicPropagationScenario:
 
         self.event_queue = EventQueue()
         self.network: Network = None
-        self.nodes: Dict[str, Node] = {}
+        self.nodes: dict[str, Node] = {}
         self.collector = MetricsCollector()
 
     def setup(self):
@@ -390,7 +390,7 @@ class BasicPropagationScenario:
         stats.export_to_csv(output_dir)
 
 
-def run_basic_scenario(config: Dict[str, Any] = None):
+def run_basic_scenario(config: dict[str, Any] | None = None):
     """
     Convenience function to run basic scenario.
 

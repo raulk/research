@@ -4,7 +4,7 @@ Stress test scenario for large-scale simulations.
 Tests the simulator's ability to handle up to 20k nodes efficiently.
 """
 
-from typing import Dict, Any
+from typing import Any
 from framework import (
     EventQueue,
     Network,
@@ -33,7 +33,7 @@ class StressTestScenario:
     - Supernodes mixed with normal nodes
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """
         Initialize stress test scenario.
 
@@ -67,7 +67,7 @@ class StressTestScenario:
 
         self.event_queue = EventQueue()
         self.network: Network = None
-        self.nodes: Dict[str, Node] = {}
+        self.nodes: dict[str, Node] = {}
         self.collector = MetricsCollector()
 
     def setup(self):
@@ -242,7 +242,7 @@ class StressTestScenario:
         stats.export_to_csv(output_dir)
 
 
-def run_stress_test(config: Dict[str, Any] = None):
+def run_stress_test(config: dict[str, Any] | None = None):
     """
     Convenience function to run stress test.
 

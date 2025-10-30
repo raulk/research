@@ -5,7 +5,7 @@ Generates interactive charts, graphs, and animated network visualizations.
 Compatible with Python 3.12+.
 """
 
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
@@ -36,7 +36,7 @@ class Visualizer:
             'not_received': '#95a5a6',  # Gray
         }
 
-    def plot_propagation_latency(self, output_file: Optional[str] = None, show: bool = False):
+    def plot_propagation_latency(self, output_file: str | None = None, show: bool = False):
         """
         Plot transaction propagation latency distribution with interactive Plotly.
 
@@ -130,7 +130,7 @@ class Visualizer:
 
         return fig
 
-    def plot_bandwidth_by_role(self, output_file: Optional[str] = None, show: bool = False):
+    def plot_bandwidth_by_role(self, output_file: str | None = None, show: bool = False):
         """
         Plot bandwidth usage by node role with interactive Plotly.
 
@@ -192,7 +192,7 @@ class Visualizer:
 
         return fig
 
-    def plot_provider_distribution(self, output_file: Optional[str] = None, show: bool = False):
+    def plot_provider_distribution(self, output_file: str | None = None, show: bool = False):
         """
         Plot distribution of providers vs samplers per transaction.
 
@@ -324,7 +324,7 @@ class Visualizer:
 
         return fig
 
-    def plot_request_success_rate(self, output_file: Optional[str] = None, show: bool = False):
+    def plot_request_success_rate(self, output_file: str | None = None, show: bool = False):
         """
         Plot request success rates by node with interactive visualization.
 
@@ -400,10 +400,10 @@ class Visualizer:
 
     def create_network_graph(
         self,
-        adjacency: Dict[str, set],
-        node_colors: Optional[Dict[str, str]] = None,
-        node_positions: Optional[Dict[str, Tuple[float, float]]] = None
-    ) -> Tuple[nx.Graph, Dict]:
+        adjacency: dict[str, set],
+        node_colors: dict[str, str] | None = None,
+        node_positions: dict[str, tuple[float, float]] | None = None
+    ) -> tuple[nx.Graph, dict]:
         """
         Create a NetworkX graph from adjacency list.
 
@@ -441,9 +441,9 @@ class Visualizer:
 
     def plot_network_topology(
         self,
-        adjacency: Dict[str, set],
-        node_colors: Optional[Dict[str, str]] = None,
-        node_positions: Optional[Dict[str, Tuple[float, float]]] = None,
+        adjacency: dict[str, set],
+        node_colors: dict[str, str] | None = None,
+        node_positions: dict[str, tuple[float, float]] | None = None,
         output_file: Optional[str] = None,
         show: bool = False
     ):
@@ -540,9 +540,9 @@ class Visualizer:
 
     def create_animated_propagation(
         self,
-        adjacency: Dict[str, set],
+        adjacency: dict[str, set],
         tx_hash: str,
-        node_positions: Optional[Dict[str, Tuple[float, float]]] = None,
+        node_positions: dict[str, tuple[float, float]] | None = None,
         output_file: Optional[str] = None,
         show: bool = False
     ):

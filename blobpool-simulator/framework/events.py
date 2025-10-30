@@ -6,7 +6,7 @@ of asynchronous network events.
 """
 
 import heapq
-from typing import Callable, Any, Optional
+from typing import Callable, Any
 from dataclasses import dataclass, field
 
 
@@ -119,7 +119,7 @@ class EventQueue:
         self._event_count += 1
         return event
 
-    def pop(self) -> Optional[Event]:
+    def pop(self) -> Event | None:
         """
         Get and remove the next event.
 
@@ -130,7 +130,7 @@ class EventQueue:
             return None
         return heapq.heappop(self._queue)
 
-    def peek(self) -> Optional[Event]:
+    def peek(self) -> Event | None:
         """
         Get the next event without removing it.
 
@@ -164,7 +164,7 @@ class EventQueue:
         """Check if queue is empty."""
         return len(self._queue) == 0
 
-    def run_until(self, end_time: float, max_events: Optional[int] = None) -> int:
+    def run_until(self, end_time: float, max_events: int | None = None) -> int:
         """
         Run simulation until a specific time or event count.
 

@@ -5,7 +5,7 @@ Tracks simulation metrics and generates tables and summaries.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
+from typing import Any
 from collections import defaultdict
 import time
 
@@ -17,15 +17,15 @@ class TransactionMetrics:
     """Metrics for a single transaction."""
     tx_hash: str
     injection_time: float
-    first_announcement_time: Optional[float] = None
-    propagation_times: Dict[str, float] = field(default_factory=dict)  # node_id -> time
+    first_announcement_time: float | None = None
+    propagation_times: dict[str, float] = field(default_factory=dict)  # node_id -> time
     provider_count: int = 0
     sampler_count: int = 0
-    full_availability_nodes: List[str] = field(default_factory=list)
-    partial_availability_nodes: List[str] = field(default_factory=list)
+    full_availability_nodes: list[str] = field(default_factory=list)
+    partial_availability_nodes: list[str] = field(default_factory=list)
 
     @property
-    def propagation_latency_p50(self) -> Optional[float]:
+    def propagation_latency_p50(self) -> float | None:
         """Median propagation latency."""
         if not self.propagation_times:
             return None
@@ -33,7 +33,7 @@ class TransactionMetrics:
         return times[len(times) // 2]
 
     @property
-    def propagation_latency_p95(self) -> Optional[float]:
+    def propagation_latency_p95(self) -> float | None:
         """95th percentile propagation latency."""
         if not self.propagation_times:
             return None
@@ -72,9 +72,9 @@ class MetricsCollector:
     """
 
     def __init__(self):
-        self.transaction_metrics: Dict[str, TransactionMetrics] = {}
-        self.node_metrics: Dict[str, NodeMetrics] = {}
-        self.events: List[Dict[str, Any]] = []
+        self.transaction_metrics: dict[str, TransactionMetrics] = {}
+        self.node_metrics: dict[str, NodeMetrics] = {}
+        self.events: list[dict[str, Any]] = []
         self.start_time: float = 0.0
         self.end_time: float = 0.0
 
@@ -143,7 +143,7 @@ class MetricsCollector:
             peer_count=peer_count
         )
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get summary statistics."""
         if not self.transaction_metrics:
             return {"error": "No transactions recorded"}
@@ -351,7 +351,7 @@ class Statistics:
         print(tabulate(rows, headers=headers, tablefmt="grid"))
         print()
 
-    def export_summary_to_dict(self) -> Dict[str, Any]:
+    def export_summary_to_dict(self) -> dict[str, Any]:
         """Export summary as dictionary for external use."""
         return self.collector.get_summary()
 

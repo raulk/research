@@ -5,7 +5,7 @@ Supports various topology strategies and realistic latency distributions.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Set, Optional, Callable, Tuple, Any
+from typing import Callable, Any
 from abc import ABC, abstractmethod
 import random
 import math
@@ -30,7 +30,7 @@ class LatencyModel:
         self,
         from_node: str,
         to_node: str,
-        distance: Optional[float] = None
+        distance: float | None = None
     ) -> float:
         """
         Calculate latency between two nodes.
@@ -65,7 +65,7 @@ class Topology(ABC):
     implement the generate() method.
     """
 
-    def __init__(self, avg_degree: int = 50, seed: Optional[int] = None):
+    def __init__(self, avg_degree: int = 50, seed: int | None = None):
         """
         Initialize topology.
 
@@ -75,10 +75,10 @@ class Topology(ABC):
         """
         self.avg_degree = avg_degree
         self.rng = random.Random(seed)
-        self.node_positions: Dict[str, Tuple[float, float]] = {}
+        self.node_positions: dict[str, tuple[float, float]] = {}
 
     @abstractmethod
-    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+    def generate(self, nodes: list[Node]) -> dict[str, set[str]]:
         """
         Generate topology and return adjacency list.
 
@@ -90,7 +90,7 @@ class Topology(ABC):
         """
         pass
 
-    def get_distance(self, node1_id: str, node2_id: str) -> Optional[float]:
+    def get_distance(self, node1_id: str, node2_id: str) -> float | None:
         """Get geographic distance between two nodes if available."""
         if node1_id in self.node_positions and node2_id in self.node_positions:
             pos1 = self.node_positions[node1_id]
@@ -107,9 +107,9 @@ class RandomTopology(Topology):
     the target average degree.
     """
 
-    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+    def generate(self, nodes: list[Node]) -> dict[str, set[str]]:
         """Generate random graph."""
-        adjacency: Dict[str, Set[str]] = {node.id: set() for node in nodes}
+        adjacency: dict[str, set[str]] = {node.id: set() for node in nodes}
         n = len(nodes)
 
         # Calculate edge probability to achieve target average degree
@@ -132,7 +132,7 @@ class SmallWorldTopology(Topology):
     resulting in high clustering and short path lengths (realistic for P2P networks).
     """
 
-    def __init__(self, avg_degree: int = 50, seed: Optional[int] = None, rewire_prob: float = 0.1):
+    def __init__(self, avg_degree: int = 50, seed: int | None = None, rewire_prob: float = 0.1):
         """
         Initialize small-world topology.
 
@@ -144,9 +144,9 @@ class SmallWorldTopology(Topology):
         super().__init__(avg_degree, seed)
         self.rewire_prob = rewire_prob
 
-    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+    def generate(self, nodes: list[Node]) -> dict[str, set[str]]:
         """Generate small-world graph."""
-        adjacency: Dict[str, Set[str]] = {node.id: set() for node in nodes}
+        adjacency: dict[str, set[str]] = {node.id: set() for node in nodes}
         n = len(nodes)
 
         if n < self.avg_degree:
@@ -193,9 +193,9 @@ class ScaleFreeTopology(Topology):
     Realistic for many real-world networks including the Internet.
     """
 
-    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+    def generate(self, nodes: list[Node]) -> dict[str, set[str]]:
         """Generate scale-free graph."""
-        adjacency: Dict[str, Set[str]] = {node.id: set() for node in nodes}
+        adjacency: dict[str, set[str]] = {node.id: set() for node in nodes}
         n = len(nodes)
 
         if n < 2:
@@ -247,9 +247,9 @@ class GridTopology(Topology):
     (up, down, left, right). Useful for testing locality effects.
     """
 
-    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+    def generate(self, nodes: list[Node]) -> dict[str, set[str]]:
         """Generate 2D grid graph."""
-        adjacency: Dict[str, Set[str]] = {node.id: set() for node in nodes}
+        adjacency: dict[str, set[str]] = {node.id: set() for node in nodes}
         n = len(nodes)
         size = int(math.ceil(math.sqrt(n)))
 
@@ -282,9 +282,9 @@ class CliqueTopology(Topology):
     Useful for testing with no network constraints.
     """
 
-    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+    def generate(self, nodes: list[Node]) -> dict[str, set[str]]:
         """Generate fully connected graph."""
-        adjacency: Dict[str, Set[str]] = {node.id: set() for node in nodes}
+        adjacency: dict[str, set[str]] = {node.id: set() for node in nodes}
 
         for i, node1 in enumerate(nodes):
             for node2 in nodes[i + 1:]:
@@ -302,9 +302,9 @@ class GeographicalTopology(Topology):
     k nearest neighbors. Realistic for geographically distributed networks.
     """
 
-    def generate(self, nodes: List[Node]) -> Dict[str, Set[str]]:
+    def generate(self, nodes: list[Node]) -> dict[str, set[str]]:
         """Generate geography-based graph."""
-        adjacency: Dict[str, Set[str]] = {node.id: set() for node in nodes}
+        adjacency: dict[str, set[str]] = {node.id: set() for node in nodes}
         n = len(nodes)
 
         # Assign random positions
@@ -345,15 +345,15 @@ class Network:
     def __init__(
         self,
         event_queue: EventQueue,
-        latency_model: Optional[LatencyModel] = None,
-        topology: Optional[Topology] = None
+        latency_model: LatencyModel | None = None,
+        topology: Topology | None = None
     ):
         self.event_queue = event_queue
         self.latency_model = latency_model or LatencyModel()
         self.topology = topology or RandomTopology()
 
-        self.nodes: Dict[str, Node] = {}
-        self.adjacency: Dict[str, Set[str]] = {}
+        self.nodes: dict[str, Node] = {}
+        self.adjacency: dict[str, set[str]] = {}
 
     def add_node(self, node: Node):
         """Add a node to the network."""
@@ -361,7 +361,7 @@ class Network:
         node.network = self
         self.adjacency[node.id] = set()
 
-    def add_nodes(self, nodes: List[Node]):
+    def add_nodes(self, nodes: list[Node]):
         """Add multiple nodes to the network."""
         for node in nodes:
             self.add_node(node)
@@ -431,7 +431,7 @@ class Network:
         from_node_id: str,
         to_node_id: str,
         tx_hash: str,
-        callback: Optional[Callable] = None
+        callback: Callable | None = None
     ):
         """
         Request full transaction from a peer.
@@ -460,7 +460,7 @@ class Network:
         from_node_id: str,
         to_node_id: str,
         tx_hash: str,
-        callback: Optional[Callable]
+        callback: Callable | None
     ):
         """Internal: handle transaction request."""
         to_node = self.nodes[to_node_id]
@@ -490,7 +490,7 @@ class Network:
         from_node_id: str,
         to_node_id: str,
         transaction: Transaction,
-        callback: Optional[Callable]
+        callback: Callable | None
     ):
         """Internal: deliver transaction to recipient."""
         to_node = self.nodes[to_node_id]
@@ -504,8 +504,8 @@ class Network:
         from_node_id: str,
         to_node_id: str,
         tx_hash: str,
-        columns: Set[int],
-        callback: Optional[Callable] = None
+        columns: set[int],
+        callback: Callable | None = None
     ):
         """
         Request specific cells from a peer.
@@ -535,8 +535,8 @@ class Network:
         from_node_id: str,
         to_node_id: str,
         tx_hash: str,
-        columns: Set[int],
-        callback: Optional[Callable]
+        columns: set[int],
+        callback: Callable | None
     ):
         """Internal: handle cells request."""
         to_node = self.nodes[to_node_id]
@@ -563,8 +563,8 @@ class Network:
         from_node_id: str,
         to_node_id: str,
         tx_hash: str,
-        cells: List[BlobCell],
-        callback: Optional[Callable]
+        cells: list[BlobCell],
+        callback: Callable | None
     ):
         """Internal: deliver cells to recipient."""
         to_node = self.nodes[to_node_id]
@@ -599,7 +599,7 @@ class Network:
             full
         )
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get network-wide statistics."""
         stats = {
             "num_nodes": len(self.nodes),

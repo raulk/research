@@ -7,7 +7,7 @@ Demonstrates various attack patterns including:
 - Eclipse attacks
 """
 
-from typing import Dict, Any, Set
+from typing import Any
 from framework import (
     EventQueue,
     Network,
@@ -34,7 +34,7 @@ class FakeProviderNode(Node):
     but announces full availability.
     """
 
-    def __init__(self, node_id: str, profile: NodeProfile, target_custody: Set[int]):
+    def __init__(self, node_id: str, profile: NodeProfile, target_custody: set[int]):
         super().__init__(node_id, profile)
         self.target_custody = target_custody
         self.malicious_announces = 0
@@ -55,7 +55,7 @@ class FakeProviderNode(Node):
         # Announce as provider (lie about full availability)
         self.malicious_announces += 1
 
-    def can_serve_request(self, tx_hash: str, requested_columns: Set[int]) -> bool:
+    def can_serve_request(self, tx_hash: str, requested_columns: set[int]) -> bool:
         """Override to fail on non-custody requests."""
         if not super().can_serve_request(tx_hash, requested_columns):
             return False
@@ -76,12 +76,12 @@ class SelectiveWithholdingNode(Node):
     Announces transactions but refuses to serve requests from targeted nodes.
     """
 
-    def __init__(self, node_id: str, profile: NodeProfile, target_victims: Set[str]):
+    def __init__(self, node_id: str, profile: NodeProfile, target_victims: set[str]):
         super().__init__(node_id, profile)
         self.target_victims = target_victims
         self.withheld_requests = 0
 
-    def serve_request(self, tx_hash: str, requested_columns: Set[int], requesting_peer: str):
+    def serve_request(self, tx_hash: str, requested_columns: set[int], requesting_peer: str):
         """Override to withhold from target victims."""
         if requesting_peer in self.target_victims:
             self.withheld_requests += 1
@@ -101,7 +101,7 @@ class AdversarialScenario:
     3. Eclipse attacks (surround victim with adversaries)
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """
         Initialize adversarial scenario.
 
@@ -131,10 +131,10 @@ class AdversarialScenario:
 
         self.event_queue = EventQueue()
         self.network: Network = None
-        self.honest_nodes: Dict[str, Node] = {}
-        self.fake_providers: Dict[str, FakeProviderNode] = {}
-        self.withholding_nodes: Dict[str, SelectiveWithholdingNode] = {}
-        self.victim_nodes: Set[str] = set()
+        self.honest_nodes: dict[str, Node] = {}
+        self.fake_providers: dict[str, FakeProviderNode] = {}
+        self.withholding_nodes: dict[str, SelectiveWithholdingNode] = {}
+        self.victim_nodes: set[str] = set()
         self.collector = MetricsCollector()
 
     def setup(self):
@@ -365,7 +365,7 @@ class AdversarialScenario:
         print(f"Visualizations saved to {output_dir}/")
 
 
-def run_adversarial_scenario(config: Dict[str, Any] = None):
+def run_adversarial_scenario(config: dict[str, Any] | None = None):
     """
     Convenience function to run adversarial scenario.
 

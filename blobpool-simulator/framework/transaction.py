@@ -5,7 +5,6 @@ Models type 3 (blob-carrying) transactions with cell-level granularity.
 """
 
 from dataclasses import dataclass, field
-from typing import Set, Optional
 import hashlib
 
 
@@ -53,9 +52,9 @@ class Blob:
     """
     index: int
     hash: str = field(default_factory=lambda: hashlib.sha256().hexdigest())
-    available_columns: Set[int] = field(default_factory=set)
+    available_columns: set[int] = field(default_factory=set)
 
-    def add_columns(self, columns: Set[int]):
+    def add_columns(self, columns: set[int]):
         """Add columns to available set."""
         self.available_columns.update(columns)
 
@@ -71,13 +70,13 @@ class Blob:
         """Check if we have enough columns for Reed-Solomon reconstruction."""
         return len(self.available_columns) >= RECONSTRUCTION_THRESHOLD
 
-    def get_cell(self, column_index: int) -> Optional[BlobCell]:
+    def get_cell(self, column_index: int) -> BlobCell | None:
         """Get a cell if available."""
         if not self.has_column(column_index):
             return None
         return BlobCell(blob_index=self.index, column_index=column_index)
 
-    def get_cells(self, column_indices: Set[int]) -> list[BlobCell]:
+    def get_cells(self, column_indices: set[int]) -> list[BlobCell]:
         """Get multiple cells."""
         return [
             BlobCell(blob_index=self.index, column_index=idx)
@@ -98,7 +97,7 @@ class Blob:
         return mask
 
     @staticmethod
-    def from_cell_mask(index: int, mask: int, hash: Optional[str] = None) -> "Blob":
+    def from_cell_mask(index: int, mask: int, hash: str | None = None) -> "Blob":
         """
         Create a Blob from a cell_mask bitarray.
 
@@ -235,7 +234,7 @@ def create_full_transaction(
 
 def create_sampled_transaction(
     num_blobs: int,
-    custody_columns: Set[int],
+    custody_columns: set[int],
     sender: str = "0x0000000000000000000000000000000000000000",
     nonce: int = 0,
     timestamp: float = 0.0

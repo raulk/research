@@ -6,7 +6,7 @@ behavior hooks for custom scenarios.
 """
 
 from dataclasses import dataclass, field
-from typing import Set, Dict, Optional, Callable, Any, List
+from typing import Callable, Any
 from enum import Enum
 import random
 
@@ -35,11 +35,11 @@ class NodeProfile:
         custom_params: Dictionary for scenario-specific parameters
     """
     role: NodeRole = NodeRole.SAMPLER
-    custody_columns: Set[int] = field(default_factory=set)
+    custody_columns: set[int] = field(default_factory=set)
     provider_probability: float = 0.15
     max_peers: int = 50
-    bandwidth_limit: Optional[float] = None
-    custom_params: Dict[str, Any] = field(default_factory=dict)
+    bandwidth_limit: float | None = None
+    custom_params: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         """Validate profile."""
@@ -64,7 +64,7 @@ class NodeBehavior:
     """
 
     def __init__(self):
-        self.hooks: Dict[str, List[Callable]] = {
+        self.hooks: dict[str, list[Callable]] = {
             "on_transaction_announced": [],
             "on_transaction_received": [],
             "on_cells_received": [],
@@ -80,7 +80,7 @@ class NodeBehavior:
             raise ValueError(f"Unknown event: {event}")
         self.hooks[event].append(callback)
 
-    def trigger(self, event: str, *args, **kwargs) -> List[Any]:
+    def trigger(self, event: str, *args, **kwargs) -> list[Any]:
         """Trigger all hooks for an event."""
         if event not in self.hooks:
             raise ValueError(f"Unknown event: {event}")
@@ -95,17 +95,17 @@ class NodeState:
     Tracks transactions, peer information, and statistics.
     """
     # Transaction pool
-    transactions: Dict[str, Transaction] = field(default_factory=dict)
+    transactions: dict[str, Transaction] = field(default_factory=dict)
 
     # Tracking which transactions we're provider/sampler for
-    provider_for: Set[str] = field(default_factory=set)  # tx hashes
-    sampler_for: Set[str] = field(default_factory=set)   # tx hashes
+    provider_for: set[str] = field(default_factory=set)  # tx hashes
+    sampler_for: set[str] = field(default_factory=set)   # tx hashes
 
     # Peer tracking
-    peer_announcements: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # tx_hash -> {peer_id: info}
+    peer_announcements: dict[str, dict[str, Any]] = field(default_factory=dict)  # tx_hash -> {peer_id: info}
 
     # Request tracking
-    pending_requests: Dict[str, Any] = field(default_factory=dict)
+    pending_requests: dict[str, Any] = field(default_factory=dict)
 
     # Statistics
     bytes_uploaded: int = 0
@@ -116,7 +116,7 @@ class NodeState:
     requests_failed: int = 0
 
     # Custom state for scenarios
-    custom_state: Dict[str, Any] = field(default_factory=dict)
+    custom_state: dict[str, Any] = field(default_factory=dict)
 
 
 class Node:
@@ -130,13 +130,13 @@ class Node:
         self,
         node_id: str,
         profile: NodeProfile,
-        behavior: Optional[NodeBehavior] = None
+        behavior: NodeBehavior | None = None
     ):
         self.id = node_id
         self.profile = profile
         self.behavior = behavior or NodeBehavior()
         self.state = NodeState()
-        self.peers: Set[str] = set()  # peer node IDs
+        self.peers: set[str] = set()  # peer node IDs
         self.network = None  # Set by Network
 
         # Determine effective role
@@ -255,7 +255,7 @@ class Node:
     def on_cells_received(
         self,
         tx_hash: str,
-        cells: List[BlobCell],
+        cells: list[BlobCell],
         from_peer: str
     ):
         """
@@ -310,8 +310,8 @@ class Node:
         self,
         tx_hash: str,
         need_full: bool,
-        need_columns: Optional[Set[int]] = None
-    ) -> List[str]:
+        need_columns: set[int] | None = None
+    ) -> list[str]:
         """
         Select which peers to request data from.
 
@@ -354,7 +354,7 @@ class Node:
 
         return candidates
 
-    def get_custody_columns_with_noise(self) -> Set[int]:
+    def get_custody_columns_with_noise(self) -> set[int]:
         """
         Get custody columns plus one random column (sampling noise).
 
@@ -373,7 +373,7 @@ class Node:
     def can_serve_request(
         self,
         tx_hash: str,
-        requested_columns: Set[int]
+        requested_columns: set[int]
     ) -> bool:
         """
         Check if node can serve a cell request.
@@ -400,9 +400,9 @@ class Node:
     def serve_request(
         self,
         tx_hash: str,
-        requested_columns: Set[int],
+        requested_columns: set[int],
         requesting_peer: str
-    ) -> Optional[List[BlobCell]]:
+    ) -> list[BlobCell] | None:
         """
         Serve a cell request from a peer.
 
@@ -444,7 +444,7 @@ class Node:
         return f"Node({self.id}, role={self.profile.role.value}, peers={len(self.peers)})"
 
 
-def create_custody_columns(num_columns: int = 8, seed: Optional[int] = None) -> Set[int]:
+def create_custody_columns(num_columns: int = 8, seed: int | None = None) -> set[int]:
     """
     Create a random custody set of columns.
 
@@ -459,7 +459,7 @@ def create_custody_columns(num_columns: int = 8, seed: Optional[int] = None) -> 
     return set(rng.sample(range(CELLS_PER_EXT_BLOB), num_columns))
 
 
-def create_provider_node(node_id: str, custody_columns: Optional[Set[int]] = None) -> Node:
+def create_provider_node(node_id: str, custody_columns: set[int] | None = None) -> Node:
     """Create a provider node (always fetches full blobs)."""
     if custody_columns is None:
         custody_columns = create_custody_columns()
@@ -472,7 +472,7 @@ def create_provider_node(node_id: str, custody_columns: Optional[Set[int]] = Non
     return Node(node_id, profile)
 
 
-def create_sampler_node(node_id: str, custody_columns: Optional[Set[int]] = None) -> Node:
+def create_sampler_node(node_id: str, custody_columns: set[int] | None = None) -> Node:
     """Create a sampler node (only fetches custody columns)."""
     if custody_columns is None:
         custody_columns = create_custody_columns()
@@ -487,7 +487,7 @@ def create_sampler_node(node_id: str, custody_columns: Optional[Set[int]] = None
 
 def create_normal_node(
     node_id: str,
-    custody_columns: Optional[Set[int]] = None,
+    custody_columns: set[int] | None = None,
     provider_probability: float = 0.15
 ) -> Node:
     """Create a normal node (probabilistic provider/sampler)."""
@@ -502,7 +502,7 @@ def create_normal_node(
     return Node(node_id, profile)
 
 
-def create_supernode(node_id: str, custody_columns: Optional[Set[int]] = None) -> Node:
+def create_supernode(node_id: str, custody_columns: set[int] | None = None) -> Node:
     """Create a supernode (always fetches full blobs, larger peerset)."""
     if custody_columns is None:
         custody_columns = create_custody_columns()
