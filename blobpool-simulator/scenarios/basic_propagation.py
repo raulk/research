@@ -111,6 +111,10 @@ class BasicPropagationScenario:
         print("Connecting network topology...")
         self.network.connect_topology()
 
+        # Set up event-driven propagation hooks
+        print("Setting up propagation hooks...")
+        self.setup_node_hooks()
+
         print("Setup complete!")
 
     def run(self):
@@ -163,53 +167,62 @@ class BasicPropagationScenario:
             self.event_queue.current_time
         )
 
-        # Inject into network
+        # Inject into network - this will automatically:
+        # 1. Add transaction to the node's state
+        # 2. Broadcast announcement to the node's peers (respecting D)
+        # 3. Each peer will receive announcement with network latency
+        # 4. Peers will react by requesting data (see setup_node_hooks)
         self.network.inject_transaction(node_id, transaction)
 
-        # Schedule propagation simulation
-        self._simulate_propagation(transaction)
-
-    def _simulate_propagation(self, transaction: Any):
+    def setup_node_hooks(self):
         """
-        Simulate transaction propagation through the network.
+        Set up reactive propagation hooks for all nodes.
 
-        This is a simplified model where each node decides its role
-        and requests data accordingly.
+        This creates event-driven cascading propagation:
+        1. Node receives announcement -> decides role -> requests data
+        2. Node receives data -> re-announces to its peers
+        3. Process repeats, propagating through network topology
         """
-        tx_hash = transaction.hash
+        for node in self.nodes.values():
+            # Hook: When node receives announcement, automatically request data
+            original_on_announced = node.on_transaction_announced
 
-        for node_id, node in self.nodes.items():
-            # Skip if already has transaction
-            if tx_hash in node.state.transactions:
-                continue
+            def make_announcement_handler(n):
+                def on_announcement_handler(tx_hash, from_peer, cell_mask, full_availability):
+                    # Call original handler first
+                    original_on_announced(tx_hash, from_peer, cell_mask, full_availability)
 
-            # Wait for announcements to arrive
-            self.event_queue.schedule(
-                delay=100,  # Small delay for announcements
-                handler=self._node_process_transaction,
-                node=node,
-                tx_hash=tx_hash,
-                description=f"Process {tx_hash[:8]} at {node_id}"
-            )
+                    # Skip if we already have this transaction
+                    if tx_hash in n.state.transactions:
+                        return
 
-    def _node_process_transaction(self, node: Node, tx_hash: str):
-        """Process transaction at a node."""
-        # Check if node has seen announcements
-        if tx_hash not in node.state.peer_announcements:
-            return
+                    # Wait for at least 2 provider announcements (as per spec) before sampling
+                    announcements = n.state.peer_announcements.get(tx_hash, {})
+                    provider_count = sum(1 for info in announcements.values() if info.get('full_availability'))
 
-        # Decide role for this transaction
-        role = node.decide_role_for_transaction(tx_hash)
+                    # Decide role for this transaction
+                    role = n.decide_role_for_transaction(tx_hash)
 
-        if role == NodeRole.PROVIDER or role == NodeRole.SUPERNODE:
-            # Request full blob
-            self._request_full_blob(node, tx_hash)
-        else:
-            # Request custody columns
-            self._request_custody_columns(node, tx_hash)
+                    if role == NodeRole.PROVIDER or role == NodeRole.SUPERNODE:
+                        # Provider: request immediately if we have a provider peer
+                        self._request_full_blob(n, tx_hash)
+                    elif role == NodeRole.SAMPLER:
+                        # Sampler: wait for at least 2 providers (as per spec)
+                        if provider_count >= 2:
+                            self._request_custody_columns(n, tx_hash)
+
+                return on_announcement_handler
+
+            node.on_transaction_announced = make_announcement_handler(node)
 
     def _request_full_blob(self, node: Node, tx_hash: str):
-        """Request full blob from providers."""
+        """
+        Request full blob from providers.
+
+        Protocol flow (per EIP):
+        1. GetPooledTransactions -> receive tx metadata (no blobs)
+        2. GetCells -> receive all 128 columns
+        """
         # Select provider peers
         peers = node.select_peers_for_request(tx_hash, need_full=True)
 
@@ -219,16 +232,32 @@ class BasicPropagationScenario:
         # Request from first available provider
         peer_id = peers[0]
 
-        self.network.request_cells(
+        # First request transaction metadata, then cells
+        def on_tx_received(tx):
+            # Now request all cells
+            self.network.request_cells(
+                from_node_id=node.id,
+                to_node_id=peer_id,
+                tx_hash=tx_hash,
+                columns=set(range(128)),  # All columns
+                callback=lambda cells: self._on_full_blob_received(node, tx_hash)
+            )
+
+        self.network.request_transaction(
             from_node_id=node.id,
             to_node_id=peer_id,
             tx_hash=tx_hash,
-            columns=set(range(128)),  # All columns
-            callback=lambda cells: self._on_full_blob_received(node, tx_hash)
+            callback=on_tx_received
         )
 
     def _request_custody_columns(self, node: Node, tx_hash: str):
-        """Request custody columns from peers."""
+        """
+        Request custody columns from peers.
+
+        Protocol flow (per EIP):
+        1. GetPooledTransactions -> receive tx metadata (no blobs)
+        2. GetCells -> receive custody columns (8 + 1 random)
+        """
         # Get custody columns with noise
         columns = node.get_custody_columns_with_noise()
 
@@ -241,12 +270,22 @@ class BasicPropagationScenario:
         # Request from first available peer
         peer_id = peers[0]
 
-        self.network.request_cells(
+        # First request transaction metadata, then cells
+        def on_tx_received(tx):
+            # Now request custody columns
+            self.network.request_cells(
+                from_node_id=node.id,
+                to_node_id=peer_id,
+                tx_hash=tx_hash,
+                columns=columns,
+                callback=lambda cells: self._on_custody_columns_received(node, tx_hash)
+            )
+
+        self.network.request_transaction(
             from_node_id=node.id,
             to_node_id=peer_id,
             tx_hash=tx_hash,
-            columns=columns,
-            callback=lambda cells: self._on_custody_columns_received(node, tx_hash)
+            callback=on_tx_received
         )
 
     def _on_full_blob_received(self, node: Node, tx_hash: str):
